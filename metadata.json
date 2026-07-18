@@ -1,0 +1,6 @@
+{
+  "name": "AutoVue",
+  "description": "Real-time vehicle telemetry dashboard for OBD-II monitoring and predictive maintenance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

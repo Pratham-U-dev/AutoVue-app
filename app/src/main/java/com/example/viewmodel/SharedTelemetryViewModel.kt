@@ -1,0 +1,143 @@
+package com.example.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.model.DriverBehaviourRequest
+import com.example.model.DriverBehaviourResponse
+import com.example.model.HealthPredictionRequest
+import com.example.model.HealthPredictionResponse
+import com.example.model.SimulatorStatus
+import com.example.model.TelemetryTick
+import com.example.repository.ConnectionStatus
+import com.example.repository.TelemetryRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+class SharedTelemetryViewModel(
+    private val repository: TelemetryRepository
+) : ViewModel() {
+
+    val connectionStatus = repository.connectionStatus
+    
+    val latestTick = repository.latestTick.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    private val _history = MutableStateFlow<List<TelemetryTick>>(emptyList())
+    val history = _history.asStateFlow()
+
+    private val _healthPrediction = MutableStateFlow<HealthPredictionResponse?>(null)
+    val healthPrediction = _healthPrediction.asStateFlow()
+
+    private val _driverBehaviour = MutableStateFlow<DriverBehaviourResponse?>(null)
+    val driverBehaviour = _driverBehaviour.asStateFlow()
+
+    private val _simulatorStatus = MutableStateFlow<SimulatorStatus?>(null)
+    val simulatorStatus = _simulatorStatus.asStateFlow()
+
+    private var telemetryJob: Job? = null
+
+    init {
+        startObserving()
+        viewModelScope.launch {
+            repository.latestTick.collectLatest { tick ->
+                if (tick != null) {
+                    val currentHistory = _history.value.toMutableList()
+                    currentHistory.add(tick)
+                    // Keep max 300 items for 5 mins of 1 tick/sec (assuming 1 tick/sec)
+                    if (currentHistory.size > 300) {
+                        currentHistory.removeAt(0)
+                    }
+                    _history.value = currentHistory
+                    
+                    // Periodically predict health (e.g. every 10 ticks)
+                    if (currentHistory.size % 10 == 0) {
+                        predictHealth(tick)
+                    }
+                    
+                    // Periodically predict driver behaviour (needs 5 points)
+                    if (currentHistory.size % 15 == 0 && currentHistory.size >= 5) {
+                        predictBehaviour(currentHistory.takeLast(5))
+                    }
+                }
+            }
+        }
+        
+        fetchSimulatorStatus()
+    }
+
+    private fun startObserving() {
+        telemetryJob?.cancel()
+        telemetryJob = viewModelScope.launch {
+            try {
+                repository.observeTelemetry().collectLatest { }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun fetchSimulatorStatus() {
+        viewModelScope.launch {
+            val result = repository.getStatus()
+            if (result.isSuccess) {
+                _simulatorStatus.value = result.getOrNull()
+            }
+        }
+    }
+
+    fun startSimulation() {
+        viewModelScope.launch {
+            repository.startSimulation()
+            fetchSimulatorStatus()
+        }
+    }
+
+    private suspend fun predictHealth(tick: TelemetryTick) {
+        val request = HealthPredictionRequest(
+            rpm = tick.data.rpm,
+            throttlePos = tick.data.throttlePos,
+            mapKpa = tick.data.mapKpa,
+            maf = tick.data.maf,
+            coolantTemp = tick.data.coolantTemp,
+            intakeAirTemp = tick.data.intakeAirTemp,
+            ambientTemp = tick.data.ambientTemp,
+            pedalD = tick.data.pedalD
+        )
+        val result = repository.predictHealth(request)
+        if (result.isSuccess) {
+            _healthPrediction.value = result.getOrNull()
+        }
+    }
+    
+    private suspend fun predictBehaviour(ticks: List<TelemetryTick>) {
+        val request = DriverBehaviourRequest(
+            rpmValues = ticks.map { it.data.rpm },
+            speedValues = ticks.map { it.data.vss },
+            throttleValues = ticks.map { it.data.throttlePos }
+        )
+        val result = repository.predictDriverBehaviour(request)
+        if (result.isSuccess) {
+            _driverBehaviour.value = result.getOrNull()
+        }
+    }
+
+    companion object {
+        fun provideFactory(repository: TelemetryRepository): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return SharedTelemetryViewModel(repository) as T
+                }
+            }
+    }
+}
