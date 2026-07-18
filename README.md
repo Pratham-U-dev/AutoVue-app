@@ -1,21 +1,37 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# AutoVue - Vehicle Telemetry & Analytics Platform
 
-# Run and deploy your AI Studio app
+AutoVue is an advanced Android application built to provide real-time vehicle telemetry monitoring and predictive insights using Machine Learning. It interfaces with an external backend to stream live OBD-II data and perform complex analysis for driver behavior and vehicle health.
 
-This contains everything you need to run your app locally.
+## Key Features
 
-View your app in AI Studio: https://ai.studio/apps/6d5cc470-e8b9-4099-9451-c87efbcf8461
+- **Live Dashboard**: Real-time streaming of OBD-II telemetry parameters (Engine Load, Coolant Temp, Intake Temp, MAP, MAF, and Pedal positions) via WebSockets.
+- **AI Insights**:
+  - **Driver Behavior Analysis**: Utilizes a rolling window of telemetry data and a pre-trained KMeans clustering model to classify driving patterns.
+  - **Vehicle Health Prediction**: Leverages a Random Forest model on single telemetry snapshots to evaluate overall vehicle health and output probability confidences.
+- **Maintenance Tracking**: (Upcoming) A dedicated module for tracking vehicle maintenance needs.
+- **Server Management**: Built-in mechanisms to manage and ping the remote Render-hosted backend instance for cold-start wakeups.
 
-## Run Locally
+## Architecture & Tech Stack
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+- **Framework**: Android, Jetpack Compose (Material Design 3)
+- **Language**: Kotlin
+- **Architecture**: MVVM (Model-View-ViewModel) with Clean Architecture principles
+- **Asynchronous Operations**: Kotlin Coroutines and Flow
+- **Networking**:
+  - **WebSockets**: OkHttp for real-time telemetry streaming (`wss://.../api/ws/live`)
+  - **REST API**: Retrofit for ML inference and backend health checks
+- **Data Serialization**: Moshi
 
+## ML Endpoints Integration
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+AutoVue integrates with specialized ML endpoints hosted on a remote server:
+
+- `POST /api/driver/predict`: Classifies driver behavior based on time-series arrays of RPM, Speed, and Throttle data.
+- `POST /api/health/predict`: Classifies the health status (e.g., Normal vs Warning) from a snapshot of 8 key telemetry metrics.
+
+## Getting Started
+
+1. Clone the repository and open the project in Android Studio.
+2. The default backend URL is configured to `https://ecu-backend-95fz.onrender.com/`. If deploying a custom backend, update the `defaultBaseUrl` in `AppContainer.kt`.
+3. Build and run on an Android device or emulator.
+4. Navigate to the **User** tab to wake up the backend if it is currently asleep (using the "Ping Backend Server" button).
