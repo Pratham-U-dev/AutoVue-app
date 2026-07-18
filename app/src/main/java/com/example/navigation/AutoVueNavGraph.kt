@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
@@ -30,9 +31,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.ui.AnalyticsScreen
+import com.example.ui.InsightsScreen
 import com.example.ui.DashboardScreen
-import com.example.ui.DiagnosticsScreen
+import com.example.ui.MaintenanceScreen
 import com.example.ui.SettingsScreen
 import com.example.ui.theme.BottomNavBackground
 import com.example.ui.theme.Indigo400
@@ -43,8 +44,8 @@ data class BottomNavItem(val name: String, val route: Screen, val icon: ImageVec
 
 val bottomNavItems = listOf(
     BottomNavItem("Dash", Screen.Dashboard, Icons.Default.Dashboard),
-    BottomNavItem("Data", Screen.Analytics, Icons.Default.Analytics),
-    BottomNavItem("Health", Screen.Diagnostics, Icons.Default.Warning),
+    BottomNavItem("Insights", Screen.Insights, Icons.Default.Analytics),
+    BottomNavItem("Maint", Screen.Maintenance, Icons.Default.Build),
     BottomNavItem("User", Screen.Settings, Icons.Default.Settings)
 )
 
@@ -102,11 +103,11 @@ fun AutoVueNavGraph(viewModel: SharedTelemetryViewModel) {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(viewModel)
             }
-            composable(Screen.Analytics.route) {
-                AnalyticsScreen(viewModel)
+            composable(Screen.Insights.route) {
+                InsightsScreen(viewModel)
             }
-            composable(Screen.Diagnostics.route) {
-                DiagnosticsScreen(viewModel)
+            composable(Screen.Maintenance.route) {
+                MaintenanceScreen(viewModel)
             }
             composable(Screen.Settings.route) {
                 SettingsScreen(viewModel)
