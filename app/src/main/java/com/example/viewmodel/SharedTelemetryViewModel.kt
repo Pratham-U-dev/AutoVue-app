@@ -102,6 +102,14 @@ class SharedTelemetryViewModel(
         }
     }
 
+    fun pingBackend() {
+        viewModelScope.launch {
+            repository.pingBackend()
+            // After pinging, we could check status or let websocket retry
+            fetchSimulatorStatus()
+        }
+    }
+
     private suspend fun predictHealth(tick: TelemetryTick) {
         val request = HealthPredictionRequest(
             rpm = tick.data.rpm,

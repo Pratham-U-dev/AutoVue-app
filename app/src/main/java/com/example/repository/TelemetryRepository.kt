@@ -54,6 +54,10 @@ class TelemetryRepository(
     suspend fun predictDriverBehaviour(request: DriverBehaviourRequest): Result<DriverBehaviourResponse> = runCatching {
         api.predictDriverBehaviour(request)
     }
+
+    suspend fun pingBackend(): Result<Any> = runCatching {
+        api.pingHealth()
+    }
 }
 
 enum class ConnectionStatus {

@@ -28,4 +28,6 @@ interface AutoVueApi {
     
     @POST("api/pause")
     suspend fun pauseSimulation()
+    @GET("health")
+    suspend fun pingHealth(): Any
 }

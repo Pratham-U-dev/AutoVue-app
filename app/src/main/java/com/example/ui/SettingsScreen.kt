@@ -36,8 +36,8 @@ fun SettingsScreen(viewModel: SharedTelemetryViewModel) {
             Text("Simulator status unknown")
         }
         
-        Button(onClick = { viewModel.startSimulation() }) {
-            Text("Start / Reset Simulator")
+        Button(onClick = { viewModel.pingBackend() }) {
+            Text("Ping Backend Server (Wake Up)")
         }
     }
 }
