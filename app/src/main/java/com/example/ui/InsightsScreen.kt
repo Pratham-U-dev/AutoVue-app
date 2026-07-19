@@ -51,8 +51,9 @@ fun InsightsScreen(viewModel: SharedTelemetryViewModel) {
             chunks.forEach { rowItems ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     rowItems.forEach { (key, value) ->
+                        val cleanKey = key.replace(Regex("\\[.*?\\]"), "").replace("_", " ").trim()
                         ValueCard(
-                            title = key.replace("_", " ").take(15),
+                            title = cleanKey,
                             value = "%.1f".format(value),
                             modifier = Modifier.weight(1f)
                         )

@@ -45,6 +45,8 @@ class SharedTelemetryViewModel(
     val simulatorStatus = _simulatorStatus.asStateFlow()
 
     private var telemetryJob: Job? = null
+    private var lastHealthPredictionTime = 0L
+    private var lastBehaviourPredictionTime = 0L
 
     init {
         startObserving()
@@ -59,14 +61,17 @@ class SharedTelemetryViewModel(
                     }
                     _history.value = currentHistory
                     
-                    // Periodically predict health (e.g. every 10 ticks)
-                    if (currentHistory.size % 10 == 0) {
+                    // Periodically predict health (e.g. every 5 seconds)
+                    val now = System.currentTimeMillis()
+                    if (now - lastHealthPredictionTime > 5000) {
+                        lastHealthPredictionTime = now
                         predictHealth(tick)
                     }
                     
                     // Periodically predict driver behaviour (needs 5 points)
-                    if (currentHistory.size % 15 == 0 && currentHistory.size >= 5) {
-                        predictBehaviour(currentHistory.takeLast(5))
+                    if (now - lastBehaviourPredictionTime > 10000 && currentHistory.size >= 5) {
+                        lastBehaviourPredictionTime = now
+                        predictBehaviour(currentHistory.takeLast(10))
                     }
                 }
             }
@@ -124,6 +129,8 @@ class SharedTelemetryViewModel(
         val result = repository.predictHealth(request)
         if (result.isSuccess) {
             _healthPrediction.value = result.getOrNull()
+        } else {
+            result.exceptionOrNull()?.printStackTrace()
         }
     }
     
@@ -136,6 +143,8 @@ class SharedTelemetryViewModel(
         val result = repository.predictDriverBehaviour(request)
         if (result.isSuccess) {
             _driverBehaviour.value = result.getOrNull()
+        } else {
+            result.exceptionOrNull()?.printStackTrace()
         }
     }
 
